@@ -12,6 +12,7 @@ from datetime import timedelta, datetime
 app = dash.Dash(__name__, 
                 external_stylesheets=[dbc.themes.FLATLY], 
                 title='MTA MetroCard Swipes')
+server = app.server				
 
 df = pd.read_csv('main.csv')
 geo_df = pd.read_csv('station_gis.csv')
