@@ -60,8 +60,58 @@ css_style = {'height':'50px',
              'margin-top':'50px', 'margin-bottom':'50px',
              'margin-left':'50px', 'margin-right':'50px'} 
 
+card_intro_text = dbc.Card([  
+    dbc.CardBody([
+        html.H5('Welcome to the MTA MetroCard Swipes Analytics Dashboard',
+                style={'font-weight':'bold'}),
+        
+        html.P([
+            'Last updated: ' + datetime.strftime(week_ending_cur, '%b %d, %Y'),
+            html.Br(),
+            'Data source: ',
+            html.A('http://web.mta.info/developers/fare.html', 
+                   href='http://web.mta.info/developers/fare.html')
+            ]),
+        html.P([
+            'For the Pandemic Recovery map, the size of the circle reflects the relative ' +
+            'volume of MetroCard swipes at each station for the current week ' +
+            '(larger means more swipes); the color reflects the % recovery, ' +
+            'calculated by dividing the current volume by the pre-pandemic ' +
+            'volume. The pre-pandemic data is defined as the 2019 data at the week ' + 
+            'corresponding to current week. ',
+            'Explore the map by using the "Box Select" or "Lasso Select" to select the stations ' +
+            'of interest. ' +
+            'For the trend graph, double click on one of the MetroCard type to ' +
+            'select the card type of interest; or single click to exclude the card from the graph. ',
+            'The MetroCard type description can be found ',
+            html.A('here', 
+                   href='http://web.mta.info/developers/resources/nyct/fares/fare_type_description.txt'),
+            '. Explore the ranking graph by dragging the slider to view station ranking ' +
+            'in different time period, or use the play button for animation.'             
+            ])
+        ])
+    ],
+    className=card_class
+    )
+
+card_selected_stations = dbc.Card([
+    dbc.FormGroup([
+        dbc.CardHeader('Selected Stations:',
+                   style={'font-weight':'bold'}
+                  ),
+        html.Div(
+            id='station_text',
+            style={"maxHeight": "80px", "overflow": "scroll", 'align':'center'}
+            )         
+        ])
+    ],
+    className=card_class
+    )
+
 card_mapbox = dbc.Card([
-    dbc.CardHeader("MAPBOX TITLE"),
+    dbc.CardHeader("NYC Subway Stations Pandemic Recovery Map",
+                   style={'font-weight':'bold'}
+                   ),
     dbc.CardBody(
         dcc.Graph(
             id = 'mapbox_scatter',
@@ -73,7 +123,9 @@ card_mapbox = dbc.Card([
     )
 
 card_barplot = dbc.Card([
-    dbc.CardHeader("BARPLOT TITLE"),
+    dbc.CardHeader("Stations Ranked by Total MetroCard Swipes",
+                   style={'font-weight':'bold'}
+                   ),
     dbc.CardBody(
         dcc.Graph(
             id = 'bar_plot',
@@ -85,7 +137,9 @@ card_barplot = dbc.Card([
     )
 
 card_areaplot = dbc.Card([
-    dbc.CardHeader("AREAPLOT TITLE"),
+    dbc.CardHeader("MetroCard Swipes Trend",
+                   style={'font-weight':'bold'}
+                   ),
     dbc.CardBody(
         dcc.Graph(
             id = 'area_plot',
@@ -97,41 +151,13 @@ card_areaplot = dbc.Card([
     className=card_class
     )
 
-card_control = dbc.Card([
-    dbc.FormGroup([
-        dbc.Label('Select MetroCard Type'),
-        dcc.Dropdown(
-            id = 'card_selector',
-            options = [{'label':card, 'value':card} for card in card_types],
-            value = [], 
-            multi=True
-            )      
-        ]),
-    dbc.FormGroup([
-        dbc.Label('Search Subway Station'),
-        dcc.Dropdown(
-            id = 'station_selector',
-            options = [{'label':station, 'value':station} for station in stations],
-            value = [],
-            multi=True
-            )        
-        ]),
-    dbc.FormGroup([
-        dbc.Label('Selected Stations:'),
-        html.Div(
-            id='station_text',
-            style={"maxHeight": "200px", "overflow": "scroll", 'align':'center'}
-            )         
-        ])
-    ],
-    className=card_class
-    )
-
 app.layout = html.Div([
-    
     dbc.Row([
-        dbc.Col(
-            card_control, 
+        dbc.Col([
+            dbc.Row(dbc.Col(card_intro_text)),
+            html.Br(),
+            dbc.Row(dbc.Col(card_selected_stations))
+            ],
             md=4
             ),
         
@@ -143,14 +169,12 @@ app.layout = html.Div([
     html.Br(),
     dbc.Row([
         dbc.Col(
-            card_barplot       
+            card_barplot
             ),
-        
         dbc.Col(
             card_areaplot
             )        
         ]),
-    
     html.Div(
         id='selected_station', style={'display':'none'}
         )
@@ -160,52 +184,46 @@ app.layout = html.Div([
 
 @app.callback(
     Output('selected_station', 'children'),
-    Input('station_selector', 'value'),
     Input('mapbox_scatter', 'selectedData')
     ) 
-def dropdown_select(dropdown_selected, mapbox_selected):
+def mapbox_select(mapbox_selected):
     if mapbox_selected is None:
         mapbox_selected = {'points':[]}
-    if len(dropdown_selected) == 0 and len(mapbox_selected['points']) == 0:
+    if len(mapbox_selected['points']) == 0:
         selected_station = stations
     else:
-        selected_station = dropdown_selected + \
-            [mapbox_selected['points'][i]['customdata'][0] 
-             for i in range(len(mapbox_selected['points']))]
+        selected_station = [mapbox_selected['points'][i]['customdata'][0] 
+                            for i in range(len(mapbox_selected['points']))]
     return json.dumps(selected_station)
     
-
 @app.callback(
     Output('station_text', 'children'),
     Input('selected_station', 'children')
     )
 def selected_station_text(selected_station):
     selected_station = list(set(json.loads(selected_station)))
+    selected_station.sort()
     if set(selected_station) == set(stations):
-        text = 'All Stations'
+        text = ' All Stations'
     else:
-        text = ''
+        text = ' '
         for station in selected_station:
-            text += station + ', ' 
+            text += station + ' | ' 
         text = text[:-2]
     return text
 
 @app.callback(
-    
     Output('bar_plot', 'figure'),
-    Input('selected_station', 'children'),
-    Input('card_selector', 'value'),
+    Input('selected_station', 'children')
     )
-def create_barplot(selected_station, selected_cards):
+def create_barplot(selected_station):
     selected_station = list(set(json.loads(selected_station)))
-    if len(selected_cards) == 0:
-        selected_cards = card_types   
     num_bars = 10
-    cols = ['WEEK', 'REMOTE', 'STATION'] + selected_cards
+    cols = ['WEEK', 'REMOTE', 'STATION'] + card_types
     tmp = df[df['STATION'].isin(selected_station)][cols].copy() 
     tmp = tmp[tmp['WEEK'] >= datetime.strptime(start_date, '%Y-%m-%d')]
     tmp = tmp.groupby(['WEEK', 'STATION'], as_index=False).sum()
-    tmp = pd.melt(tmp, id_vars=['WEEK', 'STATION'], value_vars=selected_cards, var_name='card_type', value_name='swipes')
+    tmp = pd.melt(tmp, id_vars=['WEEK', 'STATION'], value_vars=card_types, var_name='card_type', value_name='swipes')
     tmp = tmp.groupby(['WEEK', 'STATION'], as_index=False).sum()
     tmp_ = tmp.groupby('WEEK')['swipes'].nlargest(num_bars)
     try:
@@ -221,9 +239,9 @@ def create_barplot(selected_station, selected_cards):
     fig = px.bar(
         tmp, y = 'STATION', x = 'swipes', animation_frame = 'WEEK', 
         range_x=[0,max_range], orientation='h', template='seaborn',
-        labels={'STATION':'Ranked Stations',
+        labels={'STATION':'Station Name',
                 'WEEK': 'Week Ending',
-                'swipes':'Daily MetroCard Swipes'},
+                'swipes':'Average Daily MetroCard Swipes'},
         custom_data=['STATION', 'WEEK', 'swipes']
         )
 
@@ -236,24 +254,22 @@ def create_barplot(selected_station, selected_cards):
             'Week Ending: %{customdata[1]} <br>' +
             'Swipes: %{customdata[2]:,}<extra></extra>'
         )
+    fig.update_layout(
+		margin={"r":0,"t":0,"l":0,"b":0}
+		)
     return fig
-
 
 @app.callback(
     Output('area_plot', 'figure'),
-    Input('selected_station', 'children'),
-    Input('card_selector', 'value'),
+    Input('selected_station', 'children')
     )
-def create_areaplot(selected_station, selected_cards):
-    selected_station = list(set(json.loads(selected_station)))
-    if len(selected_cards) == 0:
-        selected_cards = card_types   
-    cols = ['WEEK', 'REMOTE', 'STATION'] + selected_cards
+def create_areaplot(selected_station):
+    selected_station = list(set(json.loads(selected_station))) 
+    cols = ['WEEK', 'REMOTE', 'STATION'] + card_types
     tmp = df[df['STATION'].isin(selected_station)][cols].copy() 
     tmp = tmp[tmp['WEEK'] >= datetime.strptime(start_date, '%Y-%m-%d')]
     tmp = tmp.groupby('WEEK', as_index=False).sum()
-    tmp = pd.melt(tmp, id_vars=['WEEK'], value_vars=selected_cards, var_name='card_type', value_name='swipes')
-    #tmp = tmp[tmp['card_type'].isin(selected_cards)]
+    tmp = pd.melt(tmp, id_vars=['WEEK'], value_vars=card_types, var_name='card_type', value_name='swipes')
     tmp.WEEK = tmp.WEEK.apply(lambda x: '{:%Y-%m-%d}'.format(x))
     sorted_cards = tmp.groupby('card_type', as_index=False).mean().\
         sort_values('swipes', ascending=False).card_type.tolist()
@@ -263,8 +279,8 @@ def create_areaplot(selected_station, selected_cards):
     fig = px.area(
         tmp, x='WEEK', y='swipes', color='card_type', template='seaborn',
         labels={'card_type':'MetroCard Type', 
-                'WEEK':'',
-                'swipes':'Daily MetroCard Swipes'},
+                'WEEK':'Date',
+                'swipes':'Average Daily MetroCard Swipes'},
         custom_data=['card_type', 'swipes', 'WEEK']
         )
     fig.update_xaxes(spikemode='across', spikethickness=1)
@@ -275,7 +291,7 @@ def create_areaplot(selected_station, selected_cards):
             'Week Ending: %{customdata[2]}<extra></extra>'
         )
     fig.update_layout(
-        margin={"r":0,"t":20,"l":0,"b":0}
+        margin={"r":0,"t":0,"l":0,"b":0}
         )
     return fig
 
