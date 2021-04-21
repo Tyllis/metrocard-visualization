@@ -68,7 +68,11 @@ card_intro_text = dbc.Card([
             html.Br(),
             'Data source: ',
             html.A('http://web.mta.info/developers/fare.html', 
-                   href='http://web.mta.info/developers/fare.html')
+                   href='http://web.mta.info/developers/fare.html'),
+            html.Br(),
+            'Created by: ',
+            html.A('Jun Yan', 
+                   href='mailto:junyan.pe@gmail.com')
             ]),
         html.P([
             'For the Pandemic Recovery map, the size of the circle reflects the relative ' +
