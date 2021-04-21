@@ -1,6 +1,7 @@
 import pandas as pd
 import json
 import dash
+import dash_table
 import plotly.express as px
 import dash_core_components as dcc
 import dash_html_components as html
@@ -8,10 +9,9 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 from datetime import timedelta, datetime
 
-
 app = dash.Dash(__name__, 
                 external_stylesheets=[dbc.themes.FLATLY], 
-                title='MTA MetroCard Swipes')
+                title='MTA MetroCard Data Analytics')
 server = app.server				
 
 df = pd.read_csv('main.csv')
@@ -56,15 +56,13 @@ fig.update_traces(
     )    
 
 card_class = 'card border-info'
-css_style = {'height':'50px', 
-             'margin-top':'50px', 'margin-bottom':'50px',
-             'margin-left':'50px', 'margin-right':'50px'} 
+css_style = {'margin-top':'35px', 'margin-bottom':'75px',
+             'margin-left':'75px', 'margin-right':'75px'} 
 
 card_intro_text = dbc.Card([  
     dbc.CardBody([
         html.H5('Welcome to the MTA MetroCard Swipes Analytics Dashboard',
                 style={'font-weight':'bold'}),
-        
         html.P([
             'Last updated: ' + datetime.strftime(week_ending_cur, '%b %d, %Y'),
             html.Br(),
@@ -100,8 +98,8 @@ card_selected_stations = dbc.Card([
                    style={'font-weight':'bold'}
                   ),
         html.Div(
-            id='station_text',
-            style={"maxHeight": "80px", "overflow": "scroll", 'align':'center'}
+            id='station_button',
+            style={"maxHeight": "500px", "overflow": "scroll",'align':'center'}
             )         
         ])
     ],
@@ -128,8 +126,7 @@ card_barplot = dbc.Card([
                    ),
     dbc.CardBody(
         dcc.Graph(
-            id = 'bar_plot',
-            figure=fig
+            id = 'bar_plot'
             )        
         )
     ],
@@ -142,38 +139,57 @@ card_areaplot = dbc.Card([
                    ),
     dbc.CardBody(
         dcc.Graph(
-            id = 'area_plot',
-            figure=fig
+            id = 'area_plot'
             )        
         )
     ],
-    
     className=card_class
     )
 
-app.layout = html.Div([
+card_datatable = dbc.Card([
+    dbc.CardHeader("Data Table for Selected Stations",
+                   style={'font-weight':'bold'}
+                   ),
+    dbc.CardBody(
+        dash_table.DataTable(
+            id='table',
+            
+            columns=[{'id': c, 'name': c} for c in ['Station', 'Current Daily',
+                                                    'Pre-pandemic Daily', 
+                                                    'Recovery Ratio', 'lat', 'lon']],
+            page_action='none',
+            fixed_rows={'headers': True},
+            style_table={'height': '500px', 'overflowY': 'auto', 'overflowX':'auto'},
+            style_cell={'minWidth': 100, 'maxWidth': 120}
+            )
+        )    
+    ],
+    className=card_class
+    )
+
+app.layout = html.Div([ 
     dbc.Row([
         dbc.Col([
             dbc.Row(dbc.Col(card_intro_text)),
-            html.Br(),
-            dbc.Row(dbc.Col(card_selected_stations))
             ],
             md=4
             ),
-        
-        dbc.Col(
-            card_mapbox,
+        dbc.Col([
+            dbc.Row(
+                dbc.Col(
+                    dbc.Tabs([
+                        dbc.Tab(card_mapbox, label='Map'),
+                        dbc.Tab(card_areaplot, label='Trend'),
+                        dbc.Tab(card_barplot, label='Ranking'), 
+                        dbc.Tab(card_datatable, label='Table')
+                        ])                    
+                    )
+                ),
+            html.Br(),
+            dbc.Row(dbc.Col(card_selected_stations))
+            ],
             md=8
             )
-        ]),
-    html.Br(),
-    dbc.Row([
-        dbc.Col(
-            card_barplot
-            ),
-        dbc.Col(
-            card_areaplot
-            )        
         ]),
     html.Div(
         id='selected_station', style={'display':'none'}
@@ -197,20 +213,31 @@ def mapbox_select(mapbox_selected):
     return json.dumps(selected_station)
     
 @app.callback(
-    Output('station_text', 'children'),
+    Output('station_button', 'children'),
     Input('selected_station', 'children')
     )
 def selected_station_text(selected_station):
     selected_station = list(set(json.loads(selected_station)))
     selected_station.sort()
+    button_list = []
     if set(selected_station) == set(stations):
-        text = ' All Stations'
+        button = dbc.Button('ALL STATIONS', outline=True, color="success",
+                            className="mr-1", size='sm', external_link=True,
+                            href='https://en.wikipedia.org/wiki/New_York_City_Subway_stations', 
+                            target='_blank')
+        button_list.append(button)
     else:
-        text = ' '
         for station in selected_station:
-            text += station + ' | ' 
-        text = text[:-2]
-    return text
+            href = df_meg[df_meg.STATION == station].wiki.values[0]
+            if href == href: # check if it's nan
+                button = dbc.Button(station, outline=True, color="success", size='sm',
+                                    className="mr-1", target='_blank', external_link=True,
+                                    href=href)
+            else:
+                button = dbc.Button(station, outline=True, color='danger', size='sm',
+                                    className='mr-1', disabled=True)
+            button_list.append(button)             
+    return button_list
 
 @app.callback(
     Output('bar_plot', 'figure'),
@@ -218,7 +245,7 @@ def selected_station_text(selected_station):
     )
 def create_barplot(selected_station):
     selected_station = list(set(json.loads(selected_station)))
-    num_bars = 10
+    num_bars = 15
     cols = ['WEEK', 'REMOTE', 'STATION'] + card_types
     tmp = df[df['STATION'].isin(selected_station)][cols].copy() 
     tmp = tmp[tmp['WEEK'] >= datetime.strptime(start_date, '%Y-%m-%d')]
@@ -295,6 +322,19 @@ def create_areaplot(selected_station):
         )
     return fig
 
+@app.callback(
+    Output('table', 'data'),
+    Input('selected_station', 'children')
+    )
+def create_table(selected_station):
+    selected_station = list(set(json.loads(selected_station))) 
+    selected_df = df_meg[df_meg.STATION.isin(selected_station)].copy()
+    selected_df = selected_df[['STATION', 'Current Daily', 'Pre-pandemic Daily', 'ratio', 'lat', 'lon']]
+    selected_df = selected_df.rename(columns={'STATION':'Station', 'ratio':'Recovery Ratio'})
+    selected_df.lat = selected_df.lat.round(decimals=5)
+    selected_df.lon = selected_df.lon.round(decimals=5)
+    selected_df = selected_df.to_dict(orient='records')
+    return selected_df
 
 if __name__ == '__main__':
     app.run_server(debug=True)
