@@ -1,12 +1,12 @@
 import pandas as pd
-import json
 import dash
 import dash_table
 import plotly.express as px
+import plotly.graph_objects as go
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, MATCH, ALL
 from datetime import timedelta, datetime
 
 app = dash.Dash(__name__, 
@@ -102,7 +102,7 @@ card_selected_stations = dbc.Card([
                    style={'font-weight':'bold'}
                   ),
         html.Div(
-            id='station_button',
+            id='station_button_group',
             style={"maxHeight": "500px", "overflow": "scroll",'align':'center'}
             )         
         ])
@@ -138,7 +138,7 @@ card_barplot = dbc.Card([
     )
 
 card_areaplot = dbc.Card([
-    dbc.CardHeader("MetroCard Swipes Trend",
+    dbc.CardHeader("MetroCard Trend for Selected Stations",
                    style={'font-weight':'bold'}
                    ),
     dbc.CardBody(
@@ -195,18 +195,19 @@ app.layout = html.Div([
             md=8
             )
         ]),
-    html.Div(
-        id='selected_station', style={'display':'none'}
-        )
+    
+    dcc.Store(id='selected_station'),
+    dcc.Store(id='button_filtered')   
     ],
     style=css_style   
     )
 
 @app.callback(
-    Output('selected_station', 'children'),
+    Output('station_button_group', 'children'),
+    Output('selected_station', 'data'),
     Input('mapbox_scatter', 'selectedData')
     ) 
-def mapbox_select(mapbox_selected):
+def create_buttons(mapbox_selected):
     if mapbox_selected is None:
         mapbox_selected = {'points':[]}
     if len(mapbox_selected['points']) == 0:
@@ -214,41 +215,51 @@ def mapbox_select(mapbox_selected):
     else:
         selected_station = [mapbox_selected['points'][i]['customdata'][0] 
                             for i in range(len(mapbox_selected['points']))]
-    return json.dumps(selected_station)
-    
-@app.callback(
-    Output('station_button', 'children'),
-    Input('selected_station', 'children')
-    )
-def selected_station_text(selected_station):
-    selected_station = list(set(json.loads(selected_station)))
     selected_station.sort()
     button_list = []
     if set(selected_station) == set(stations):
-        button = dbc.Button('ALL STATIONS', outline=True, color="success",
-                            className="mr-1", size='sm', external_link=True,
-                            href='https://en.wikipedia.org/wiki/New_York_City_Subway_stations', 
-                            target='_blank')
+        selected_station = ['ALL STATIONS']
+        button = dbc.Button('ALL STATIONS', outline=True, color="success", size='sm',
+                            className="mr-1", n_clicks=0, id={'type':'station_button', 'index':'ALL STATIONS'})
         button_list.append(button)
     else:
         for station in selected_station:
-            href = df_meg[df_meg.STATION == station].wiki.values[0]
-            if href == href: # check if it's nan
-                button = dbc.Button(station, outline=True, color="success", size='sm',
-                                    className="mr-1", target='_blank', external_link=True,
-                                    href=href)
-            else:
-                button = dbc.Button(station, outline=True, color='danger', size='sm',
-                                    className='mr-1', disabled=True)
+            button = dbc.Button(station, outline=True, color="success", size='sm',
+                                className="mr-1", n_clicks=0, id = {'type':'station_button', 'index':station})
             button_list.append(button)             
-    return button_list
+    return button_list, selected_station
+    
+@app.callback(
+    Output({'type':'station_button', 'index':MATCH}, 'color'),
+    Input({'type':'station_button', 'index':MATCH}, 'n_clicks'),
+    prevent_initial_call=True
+    )
+def button_color_change(clicks):
+    if clicks % 2 == 0:
+        color = 'success'
+    else:
+        color = 'danger'
+    return color
+
+@app.callback(
+    Output('button_filtered', 'data'),
+    Input('selected_station', 'data'),
+    Input({'type':'station_button', 'index':ALL}, 'n_clicks')
+    )
+def button_filter(selected_station, clicks):    
+    even_clicks_idx = [idx for idx, val in enumerate(clicks) if val % 2 ==0]
+    filtered_station = [selected_station[idx] for idx in even_clicks_idx]       
+    if 'ALL STATIONS' in filtered_station:
+        filtered_station = stations
+    return filtered_station
 
 @app.callback(
     Output('bar_plot', 'figure'),
-    Input('selected_station', 'children')
+    Input('button_filtered', 'data')
     )
 def create_barplot(selected_station):
-    selected_station = list(set(json.loads(selected_station)))
+    if len(selected_station) == 0:
+        return go.Figure(data=[go.Scatter(x=[],y=[])])
     num_bars = 15
     cols = ['WEEK', 'REMOTE', 'STATION'] + card_types
     tmp = df[df['STATION'].isin(selected_station)][cols].copy() 
@@ -275,7 +286,6 @@ def create_barplot(selected_station):
                 'swipes':'Average Daily MetroCard Swipes'},
         custom_data=['STATION', 'WEEK', 'swipes']
         )
-
     fig.update_layout(
         yaxis=dict(autorange="reversed"))
     
@@ -292,10 +302,11 @@ def create_barplot(selected_station):
 
 @app.callback(
     Output('area_plot', 'figure'),
-    Input('selected_station', 'children')
+    Input('button_filtered', 'data')
     )
-def create_areaplot(selected_station):
-    selected_station = list(set(json.loads(selected_station))) 
+def create_areaplot(selected_station):    
+    if len(selected_station) == 0:
+        return go.Figure(data=[go.Scatter(x=[],y=[])])
     cols = ['WEEK', 'REMOTE', 'STATION'] + card_types
     tmp = df[df['STATION'].isin(selected_station)][cols].copy() 
     tmp = tmp[tmp['WEEK'] >= datetime.strptime(start_date, '%Y-%m-%d')]
@@ -328,13 +339,12 @@ def create_areaplot(selected_station):
 
 @app.callback(
     Output('table', 'data'),
-    Input('selected_station', 'children')
+    Input('button_filtered', 'data')
     )
-def create_table(selected_station):
-    selected_station = list(set(json.loads(selected_station))) 
+def create_table(selected_station):   
     selected_df = df_meg[df_meg.STATION.isin(selected_station)].copy()
-    selected_df = selected_df[['STATION', 'Current Daily', 'Pre-pandemic Daily', 'ratio', 'lat', 'lon']]
-    selected_df = selected_df.rename(columns={'STATION':'Station', 'ratio':'Recovery Ratio'})
+    selected_df = selected_df[['STATION', 'Current Daily', 'Pre-pandemic Daily', 'ratio', 'lat', 'lon', 'wiki']]
+    selected_df = selected_df.rename(columns={'STATION':'Station', 'ratio':'Recovery Ratio', 'wiki':'Wikipedia Link'})
     selected_df.lat = selected_df.lat.round(decimals=5)
     selected_df.lon = selected_df.lon.round(decimals=5)
     selected_df = selected_df.to_dict(orient='records')
