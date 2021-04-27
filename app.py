@@ -1,6 +1,12 @@
-import pandas as pd
+# -*- coding: utf-8 -*-
+"""
+@author: junyan
+"""
+
+import os
 import dash
 import dash_table
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import dash_core_components as dcc
@@ -12,10 +18,15 @@ from datetime import timedelta, datetime
 app = dash.Dash(__name__, 
                 external_stylesheets=[dbc.themes.FLATLY], 
                 title='MTA MetroCard Data Analytics')
-server = app.server				
+server = app.server
 
-df = pd.read_csv('main.csv')
-geo_df = pd.read_csv('station_gis.csv')
+if os.environ['DATA_URL'].exist(): 	
+    data_url = os.environ['DATA_URL']
+else:
+    data_url = 'data'  			
+
+df = pd.read_csv(os.path.join(data_url, 'main.csv'))
+geo_df = pd.read_csv(os.path.join(data_url, 'station_gis.csv'))
 df.WEEK = df.WEEK.apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
 card_types = df.drop(columns=['WEEK', 'REMOTE', 'STATION']).sum(axis=0).\
     sort_values(ascending=False).index.tolist()
