@@ -20,13 +20,14 @@ app = dash.Dash(__name__,
                 title='MTA MetroCard Data Analytics')
 server = app.server
 
-if os.environ['DATA_URL'].exist(): 	
+if 'DATA_URL' in os.environ: 	
     data_url = os.environ['DATA_URL']
 else:
-    data_url = 'data'  			
+    data_url = 'data/'   			
 
-df = pd.read_csv(os.path.join(data_url, 'main.csv'))
-geo_df = pd.read_csv(os.path.join(data_url, 'station_gis.csv'))
+df = pd.read_csv(data_url + 'main.csv')
+geo_df = pd.read_csv(data_url + 'station_gis.csv')
+
 df.WEEK = df.WEEK.apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
 card_types = df.drop(columns=['WEEK', 'REMOTE', 'STATION']).sum(axis=0).\
     sort_values(ascending=False).index.tolist()
