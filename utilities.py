@@ -48,8 +48,8 @@ def add_data(df, data_path):
     """
     Parameters
     ----------
-    df : str
-        Path to the existing main data file.
+    df : str or pandas.DataFrame
+        Path to the existing main data file, or existing pandas.DataFrame.
     data_dir : str
         Path to the new data file.
 

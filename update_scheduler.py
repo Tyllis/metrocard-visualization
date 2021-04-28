@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 @author: junyan
+
+Scheduler to update the data/main.csv every week.
 """
 
 import os
+import sys
 import pandas as pd
 import utilities as util
 from github import Github, InputGitTreeElement
@@ -21,7 +24,13 @@ new_date = last_date + timedelta(days=7)
 file_date = new_date + timedelta(days=7)
 file_name = 'fares_{:%y%m%d}.csv'.format(file_date)
 new_data_url = 'http://web.mta.info/developers/data/nyct/fares/' + file_name
-df, new_data_added = util.add_data(df, new_data_url)
+
+try:
+    df, new_data_added = util.add_data(df, new_data_url)
+except:
+    print('Unexpected error:', sys.exc_info()[0])
+    print('The data link generated is: ', new_data_url)
+    new_data_added = False
 
 if new_data_added:
     df = df.to_csv(sep=',', index=False)

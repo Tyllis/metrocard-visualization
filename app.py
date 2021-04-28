@@ -17,7 +17,7 @@ from datetime import timedelta, datetime
 
 app = dash.Dash(__name__, 
                 external_stylesheets=[dbc.themes.FLATLY], 
-                title='MTA MetroCard Data Analytics')
+                title='MTA Subway Fare Data Analytics')
 server = app.server
 
 if 'DATA_URL' in os.environ: 	
@@ -73,7 +73,7 @@ css_style = {'margin-top':'35px', 'margin-bottom':'75px',
 
 card_intro_text = dbc.Card([  
     dbc.CardBody([
-        html.H5('Welcome to the MTA MetroCard Swipes Analytics Dashboard',
+        html.H5('Welcome to the MTA Subway Fare Data Analytics Dashboard',
                 style={'font-weight':'bold'}),
         html.P([
             'Last updated: ' + datetime.strftime(week_ending_cur, '%b %d, %Y'),
@@ -82,26 +82,38 @@ card_intro_text = dbc.Card([
             html.A('http://web.mta.info/developers/fare.html', 
                    href='http://web.mta.info/developers/fare.html'),
             html.Br(),
-            'Created by: ',
-            html.A('Jun Yan', 
-                   href='mailto:junyan.pe@gmail.com')
+            'GitHub repository: ',
+            html.A('https://github.com/Tyllis/metrocard-visualization', 
+                   href='https://github.com/Tyllis/metrocard-visualization')
             ]),
         html.P([
-            'For the Pandemic Recovery map, the size of the circle reflects the relative ' +
+            'The New York City Transit subway fare data are based on the number of MetroCard ' +
+            'swipes made each week by customers entering each station of the New York City ' +
+            'Subway, PATH, AirTrain JFK and the Roosevelt Island Tram. '
+            ]),
+        html.P([
+            'On the Pandemic Recovery map, the size of the circle shows the relative ' +
             'volume of MetroCard swipes at each station for the current week ' +
-            '(larger means more swipes); the color reflects the % recovery, ' +
+            '(larger means more swipes); the color reflects the precent recovery, ' +
             'calculated by dividing the current volume by the pre-pandemic ' +
             'volume. The pre-pandemic data is defined as the 2019 data at the week ' + 
-            'corresponding to current week. ',
-            'Explore the map by using the "Box Select" or "Lasso Select" to select the stations ' +
-            'of interest. ' +
-            'For the trend graph, double click on one of the MetroCard type to ' +
+            'corresponding to current week. '            
+            ]),
+        html.P([
+            'Explore the map by using the "Box Select" or "Lasso Select" to select ' +
+            'the stations of interest. The Trend, Ranking, and Table will interact ' +
+            'based on the station selection. clicking on the buttons in the Selected ' +
+            'Stations area toggles the stations on/off. To reset the selection to default '+
+            '(all stations), double click on any area on the map.'
+            ]),
+        html.P([
+            'For the trend graph, double click on one of the MetroCard type in the legend to ' +
             'select the card type of interest; or single click to exclude the card from the graph. ',
             'The MetroCard type description can be found ',
             html.A('here', 
                    href='http://web.mta.info/developers/resources/nyct/fares/fare_type_description.txt'),
             '. Explore the ranking graph by dragging the slider to view station ranking ' +
-            'in different time period, or use the play button for animation.'             
+            'in different time period, or use the play button for an animation through time.'             
             ])
         ])
     ],
