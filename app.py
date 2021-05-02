@@ -17,7 +17,7 @@ from datetime import timedelta, datetime
 
 app = dash.Dash(__name__, 
                 external_stylesheets=[dbc.themes.FLATLY], 
-                title='MTA Subway Fare Data Analytics')
+                title='MTA Subway Fare Data Visualization')
 server = app.server
 
 if 'DATA_URL' in os.environ: 	
@@ -73,7 +73,7 @@ css_style = {'margin-top':'35px', 'margin-bottom':'75px',
 
 card_intro_text = dbc.Card([  
     dbc.CardBody([
-        html.H5('Welcome to the MTA Subway Fare Data Analytics Dashboard',
+        html.H4('Welcome to the MTA Subway Fare Data Analytics Dashboard',
                 style={'font-weight':'bold'}),
         html.P([
             'Last updated: ' + datetime.strftime(week_ending_cur, '%b %d, %Y'),
@@ -108,8 +108,9 @@ card_intro_text = dbc.Card([
             ]),
         html.P([
             'For the trend graph, double click on one of the MetroCard type in the legend to ' +
-            'select the card type of interest; or single click to exclude the card from the graph. ',
-            'The MetroCard type description can be found ',
+            'select the card type of interest; then single click to add additional cards. ' +
+            'Double click again on the legend to reset selection.' + 
+			'The MetroCard type description can be found ',
             html.A('here', 
                    href='http://web.mta.info/developers/resources/nyct/fares/fare_type_description.txt'),
             '. Explore the ranking graph by dragging the slider to view station ranking ' +
@@ -162,7 +163,7 @@ card_barplot = dbc.Card([
     )
 
 card_areaplot = dbc.Card([
-    dbc.CardHeader("MetroCard Trend for Selected Stations",
+    dbc.CardHeader("Trend for Selected Stations",
                    style={'font-weight':'bold'}
                    ),
     dbc.CardBody(
