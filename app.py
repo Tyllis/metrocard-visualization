@@ -73,7 +73,7 @@ css_style = {'margin-top':'35px', 'margin-bottom':'75px',
 
 card_intro_text = dbc.Card([  
     dbc.CardBody([
-        html.H4('Welcome to the MTA Subway Fare Data Analytics Dashboard',
+        html.H5('Welcome to the MTA Subway Fare Data Analytics Dashboard',
                 style={'font-weight':'bold'}),
         html.P([
             'Last updated: ' + datetime.strftime(week_ending_cur, '%b %d, %Y'),
@@ -102,8 +102,8 @@ card_intro_text = dbc.Card([
         html.P([
             'Explore the map by using the "Box Select" or "Lasso Select" to select ' +
             'the stations of interest. The Trend, Ranking, and Table will interact ' +
-            'based on the station selection. clicking on the buttons in the Selected ' +
-            'Stations area toggles the stations on/off. To reset the selection to default '+
+            'based on the station selection. Clicking on the buttons in the Selected ' +
+            'Stations area toggles the stations on/off. To reset to default selection'+
             '(all stations), double click on any area on the map.'
             ]),
         html.P([
