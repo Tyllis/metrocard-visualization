@@ -103,13 +103,13 @@ card_intro_text = dbc.Card([
             'Explore the map by using the "Box Select" or "Lasso Select" to select ' +
             'the stations of interest. The Trend, Ranking, and Table will interact ' +
             'based on the station selection. Clicking on the buttons in the Selected ' +
-            'Stations area toggles the stations on/off. To reset to default selection'+
+            'Stations area toggles the stations on/off. To reset to default selection '+
             '(all stations), double click on any area on the map.'
             ]),
         html.P([
             'For the trend graph, double click on one of the MetroCard type in the legend to ' +
             'select the card type of interest; then single click to add additional cards. ' +
-            'Double click again on the legend to reset selection.' + 
+            'Double click again on the legend to reset selection. ' + 
 			'The MetroCard type description can be found ',
             html.A('here', 
                    href='http://web.mta.info/developers/resources/nyct/fares/fare_type_description.txt'),
@@ -376,4 +376,4 @@ def create_table(selected_station):
     return selected_df
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server()
