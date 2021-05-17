@@ -13,7 +13,7 @@ The New York City Transit (MTA) releases weekly subway fare data through their [
 ## Tech/framework used
 <b>Built with</b>
 - [Python](https://www.python.org/)
-- [Pands](https://pandas.pydata.org/)
+- [Pandas](https://pandas.pydata.org/)
 - [Plotly-Dash](https://plotly.com/)
 - [Mapbox](https://www.mapbox.com/)
 - [Heroku](http://heroku.com/)
