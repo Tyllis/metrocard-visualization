@@ -89,7 +89,9 @@ card_intro_text = dbc.Card([
         html.P([
             'The New York City Transit subway fare data are based on the number of MetroCard ' +
             'swipes made each week by customers entering each station of the New York City ' +
-            'Subway, PATH, AirTrain JFK and the Roosevelt Island Tram. '
+            'Subway, PATH, AirTrain JFK and the Roosevelt Island Tram. The data is released ' +
+            'one week after the recorded week. This dashboard is updated every Sunday when the ' +
+            'new data is released.'
             ]),
         html.P([
             'On the Pandemic Recovery map, the size of the circle shows the relative ' +
