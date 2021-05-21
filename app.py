@@ -42,7 +42,7 @@ df_cur = df_sel[df_sel['WEEK']==week_ending_cur][['STATION', 'row_sum']].groupby
 df_old = df_sel[df_sel['WEEK']==week_ending_old][['STATION', 'row_sum']].groupby('STATION', as_index=False).sum()
 df_meg = df_cur.merge(df_old, how='left', on='STATION')
 df_meg['ratio'] = round(df_meg.row_sum_x / df_meg.row_sum_y, 4)
-df_meg['Current Daily'] = (df_meg['row_sum_x'] / 7).apply(lambda x: '{:,}'.format(int(x) if x == x else 0 ))
+df_meg['Recent Daily'] = (df_meg['row_sum_x'] / 7).apply(lambda x: '{:,}'.format(int(x) if x == x else 0 ))
 df_meg['Pre-pandemic Daily'] = (df_meg['row_sum_y'] / 7).apply(lambda x: '{:,}'.format(int(x) if x == x else 0))
 df_meg = df_meg.merge(geo_df, how='left', on='STATION')
 df_meg['size'] = df_meg['row_sum_x'].fillna(0) / 7
@@ -50,7 +50,7 @@ df_meg['ratio'] = df_meg['ratio'].fillna(0)
 fig = px.scatter_mapbox(
     df_meg, lat="lat", lon="lon", size='size', color='ratio', zoom=10,
     labels={'ratio':'% Recovery'},
-    custom_data=['STATION', 'Pre-pandemic Daily', 'Current Daily', 'ratio'],
+    custom_data=['STATION', 'Pre-pandemic Daily', 'Recent Daily', 'ratio'],
     range_color=[0, df_meg['ratio'].quantile(0.75)],
     color_continuous_scale=px.colors.sequential.Blues
     )        
@@ -62,7 +62,7 @@ fig.update_layout(
 fig.update_traces(
     hovertemplate=
         '<b>Station: %{customdata[0]}</b> <br>' + 
-        'Current Average Daily: %{customdata[2]} <br>' +
+        'Recent Average Daily: %{customdata[2]} <br>' +
         'Pre-pandemic Daily: %{customdata[1]} <br>' +
         '% Recovery : %{customdata[3]:.2%}'
     )    
@@ -93,11 +93,11 @@ card_intro_text = dbc.Card([
             ]),
         html.P([
             'On the Pandemic Recovery map, the size of the circle shows the relative ' +
-            'volume of MetroCard swipes at each station for the current week ' +
+            'volume of MetroCard swipes at each station for the recent week ' +
             '(larger means more swipes); the color reflects the precent recovery, ' +
-            'calculated by dividing the current volume by the pre-pandemic ' +
+            'calculated by dividing the recent volume by the pre-pandemic ' +
             'volume. The pre-pandemic data is defined as the 2019 data at the week ' + 
-            'corresponding to current week. '            
+            'corresponding to recent week. '            
             ]),
         html.P([
             'Explore the map by using the "Box Select" or "Lasso Select" to select ' +
@@ -183,7 +183,7 @@ card_datatable = dbc.Card([
         dash_table.DataTable(
             id='table',
             
-            columns=[{'id': c, 'name': c} for c in ['Station', 'Current Daily',
+            columns=[{'id': c, 'name': c} for c in ['Station', 'Recent Daily',
                                                     'Pre-pandemic Daily', 
                                                     'Recovery Ratio', 'lat', 'lon']],
             page_action='none',
@@ -368,7 +368,7 @@ def create_areaplot(selected_station):
     )
 def create_table(selected_station):   
     selected_df = df_meg[df_meg.STATION.isin(selected_station)].copy()
-    selected_df = selected_df[['STATION', 'Current Daily', 'Pre-pandemic Daily', 'ratio', 'lat', 'lon', 'wiki']]
+    selected_df = selected_df[['STATION', 'Recent Daily', 'Pre-pandemic Daily', 'ratio', 'lat', 'lon', 'wiki']]
     selected_df = selected_df.rename(columns={'STATION':'Station', 'ratio':'Recovery Ratio', 'wiki':'Wikipedia Link'})
     selected_df.lat = selected_df.lat.round(decimals=5)
     selected_df.lon = selected_df.lon.round(decimals=5)
