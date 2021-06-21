@@ -45,3 +45,4 @@ if new_data_added:
     parent = repo.get_git_commit(master_sha)
     commit = repo.create_git_commit(commit_message, tree, [parent])
     master_ref.edit(commit.sha)
+    print(commit_message)
