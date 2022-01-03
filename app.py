@@ -33,7 +33,7 @@ card_types = df.drop(columns=['WEEK', 'REMOTE', 'STATION']).sum(axis=0).\
     sort_values(ascending=False).index.tolist()
 stations = df['STATION'].sort_values().unique().tolist()
 week_ending_cur = df.WEEK.max()
-week_ending_old = week_ending_cur - timedelta(weeks= 2 * 52)
+week_ending_old = week_ending_cur - timedelta(weeks= (week_ending_cur.year-2019) * 52)
 start_date = '2020-01-04'  
 
 df_sel = df[df['STATION'].isin(stations)].copy()
